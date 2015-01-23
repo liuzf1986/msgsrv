@@ -1,24 +1,35 @@
-#include "FixedBuffer.hpp"
+#include <memory>
 
-typedef FixedBuffer<20, 5> testbuf5;
-typedef FixedBuffer<20, 10> testbuf10;
+#include "BitmapTree.hpp"
 
-extern void foo();
+
+int count_lwords(size_t size) {
+  return (size + (sizeof(unsigned long) << 3) - 1) >> 6;
+}
 
 int main(int argc, char *argv[])
 {
-  testbuf5* f = new testbuf5();
-  testbuf5* f2 = new testbuf5();
-  testbuf10* t = new testbuf10();
+  // __builtin_clzl
 
-  printf("f %p \n", f->getBuffer());
-  printf("f2 %p \n", f2->getBuffer());
-  printf("t %p \n", t->getBuffer());
+  //  printf("0xFF first bit = %d \n", bsf_c(0xFF) );//__builtin_clzl(0xFFFFFFFFFFFFFFFF));
+  //printf("0 first bit = %d \n", bsf_c(0));
 
+  /*
+  printf("count 0 = %d \n", count_lwords(0));
+  printf("count 1 = %d \n", count_lwords(1));
+  printf("count 64 = %d \n", count_lwords(64));
+  printf("count 65 = %d \n", count_lwords(65));
 
-  printf("=============================== \n");
+  printf("xxx =%lx \n", -1UL << 5);
+  */
 
-  foo();
+  BitmapTree bmpTree(129);
+
+  // printf("deep = %d \n", bmpTree.getDeep());
+
+  bmpTree._print_dbg();
+
+  
   
   return 0;
 }
