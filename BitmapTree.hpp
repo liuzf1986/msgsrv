@@ -13,7 +13,7 @@
 using namespace std;
 
 struct BitmapLayer {
-  BitmapLayer(size_t size) : _bits(nullptr), _lwords(0), _tailBits(0) {
+  BitmapLayer(size_t size) : _bits(nullptr), _lwords(0), _tailBits(0), _size(size) {
     if(size > 0) {
       /* allocate uint64_t array */
       _lwords = calculate_lwords(size);
@@ -48,11 +48,49 @@ struct BitmapLayer {
       printf("%lx ", _bits[i]);
     }
   }
+
+  /** set bit index to 1
+   * @return : if original uint64_t is 0, return true, else return false
+   */
+  inline bool set(off64_t bitIdx) {
+    if(__builtin_expect((bitIdx > _size), 0)) {
+      return false;
+    }
+    
+    off64_t lwoff = bitIdx >> 6;
+    /* if original is 0, set one bit will affect up layer */
+    bool upApply = !(_bits[lwoff]);
+    _bits[lwoff] |= (1 << (bitIdx & 0x3F));
+    return upApply;
+  }
+
+  /* reset layer's bit offset and return it's uint64_t index */
+  inline bool reset(off64_t bitIdx) {
+    if(__builtin_expect((bitIdx > _size), 0)) {
+      return false;
+    }
+
+    off64_t lwoff = bitIdx >> 6;
+    /* if new value is zero, affect up layer */
+    return !(_bits[lwoff] &= ~(64 - (1 << (bitIdx & 0x3F))));
+  }
+
+  /* find first seted bit in uint64_t */
+  inline int firstBitSet(off64_t lwoff) {
+    if(__builtin_expect((lwoff > _lwords), 0)) {
+      return -1;
+    }
+    return __builtin_clzl(_bits[lwoff]);
+  }
   
   uint64_t* _bits;
   size_t _lwords;   // indicate how much long ints.
   size_t _tailBits; // how much valid bits in tail uint64_t
+  size_t _size;
 };
+
+/* 8 layer max deep, can describe 64 ^ 8 = 2 ^ 48 objs */
+#define BMT_MAX_DEEP (8)
 
 class BitmapTree {
  public:
@@ -100,16 +138,59 @@ class BitmapTree {
     }
   }
 
- private:
-  /* find first seted bit in uint64_t */
-  inline int firstBitSet(uint64_t lword) {
-    return __builtin_clzl(lword);
+  inline off64_t bitRequire() {
+    off64_t bitsOffs[BMT_MAX_DEEP] = {0};
+    off64_t lwOffs = 0;
+    bool found = true;
+    off64_t totOff = -1;
+
+    /* record bit offset */
+    for(int i = 0; i < _deep; i ++) {
+      bitsOffs[i] = _layers[i]->firstBitSet(lwOffs);
+      lwOffs = bitsOffs[i];
+
+      if(__builtin_expect((lwOffs < 0), 0)) {
+        found = false;
+        break;
+      }
+    }
+
+    for(int i = 0; i < _deep; i++) {
+      printf("bits offset = %d \n", bitsOffs[i]);
+    }
+
+    printf("qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq \n");
+
+    /* if found, reset bit upward, calculate total offsets */
+    if(found) {
+      for(int i = (_deep -1); i >= 0; i--) {
+        if(!_layers[i]->reset(bitsOffs[i])) {
+          break;
+        }
+      }
+
+      totOff = 0;
+      for(int i = 0; i < _deep; i ++) {
+        totOff += (bitsOffs[i] << (6 * (_deep - 1 - i)));
+      }
+    }
+    return totOff;
   }
+
+  inline void bitTurnback(off64_t idx) {
+    
+  }
+ private:
   
-  /* 5 layer max deep, can describe 64 ^ 8 = 2 ^ 48 objs */
-  BitmapLayer* _layers[8];
+  BitmapLayer* _layers[BMT_MAX_DEEP];
   uint8_t _deep;
 };
+
+
+
+
+
+
 
 
 
