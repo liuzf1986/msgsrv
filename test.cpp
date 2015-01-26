@@ -23,13 +23,16 @@ int main(int argc, char *argv[])
   printf("xxx =%lx \n", -1UL << 5);
   */
 
-  BitmapTree bmpTree(65);
+  BitmapTree bmpTree(66);
+  printf("deep = %d \n", bmpTree.getDeep());
   bmpTree._print_dbg();
-    for(int i = 0; i < 3; i++) {
-      bmpTree.bitRequire();
-    }
-
-  // printf("deep = %d \n", bmpTree.getDeep());
+  
+  for(int i = 0; i < 64; i++) {
+    bmpTree.bitRequire();
+    //    printf("bit aquired = %d \n", bmpTree.bitRequire());
+  }
+  bmpTree._print_dbg();
+  printf("bit aquired = %d \n", bmpTree.bitRequire());
   bmpTree._print_dbg();
   printf("bit aquired = %d \n", bmpTree.bitRequire());
   bmpTree._print_dbg();

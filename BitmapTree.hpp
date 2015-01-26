@@ -10,6 +10,8 @@
  * This must compile in gcc, 
  */
 
+#define LONG_BITS  (64)
+
 using namespace std;
 
 struct BitmapLayer {
@@ -28,7 +30,7 @@ struct BitmapLayer {
         _bits[_lwords - 1] = ((_bits[_lwords - 1]) & (-1UL << ((sizeof(uint64_t) << 3) - _tailBits)));
       }
 
-      printf("tail = %lu \n", _tailBits );
+      //      printf("tail = %lu \n", _tailBits );
     }
   }
 
@@ -45,7 +47,7 @@ struct BitmapLayer {
 
   void _print_dbg() const {
     for(int i = 0; i < _lwords; i ++) {
-      printf("%lx ", _bits[i]);
+      printf("%016lx ", _bits[i]);
     }
   }
 
@@ -72,7 +74,7 @@ struct BitmapLayer {
 
     off64_t lwoff = bitIdx >> 6;
     /* if new value is zero, affect up layer */
-    return !(_bits[lwoff] &= ~(64 - (1 << (bitIdx & 0x3F))));
+    return !(_bits[lwoff] &= ~(1L << (LONG_BITS - 1 - (bitIdx & 0x3F))));
   }
 
   /* find first seted bit in uint64_t */
@@ -80,7 +82,13 @@ struct BitmapLayer {
     if(__builtin_expect((lwoff > _lwords), 0)) {
       return -1;
     }
-    return __builtin_clzl(_bits[lwoff]);
+    printf("===================== _bit = %lx \n", _bits[lwoff]);
+    int offInLword = __builtin_clzl(_bits[lwoff]);
+    if(offInLword >= 0) {
+      return (lwoff << 6) + offInLword;
+    } else {
+      return -1;
+    }
   }
   
   uint64_t* _bits;
@@ -155,11 +163,9 @@ class BitmapTree {
       }
     }
 
-    for(int i = 0; i < _deep; i++) {
-      printf("bits offset = %d \n", bitsOffs[i]);
-    }
-
-    printf("qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq \n");
+       for(int i = 0; i < _deep; i++) {
+          printf("bits offset = %d \n", bitsOffs[i]);
+        }
 
     /* if found, reset bit upward, calculate total offsets */
     if(found) {
