@@ -1,6 +1,7 @@
 #include <memory>
 
 #include "BitmapTree.hpp"
+#include "FixedBuffer.hpp"
 
 
 int count_lwords(size_t size) {
@@ -23,22 +24,35 @@ int main(int argc, char *argv[])
   printf("xxx =%lx \n", -1UL << 5);
   */
 
+  #if 0
   BitmapTree bmpTree(66);
   printf("deep = %d \n", bmpTree.getDeep());
   bmpTree._print_dbg();
   
   for(int i = 0; i < 64; i++) {
-    bmpTree.bitRequire();
-    //    printf("bit aquired = %d \n", bmpTree.bitRequire());
+    // bmpTree.bitRequire();
+    printf("bit aquired = %ld \n", bmpTree.bitRequire());
   }
   bmpTree._print_dbg();
-  printf("bit aquired = %d \n", bmpTree.bitRequire());
-  bmpTree._print_dbg();
-  printf("bit aquired = %d \n", bmpTree.bitRequire());
+
+  for(int i = 0; i < 10; i ++) {
+    off64_t off = bmpTree.bitRequire();
+    printf("bit aquired = %ld \n", off);
+    bmpTree.bitTurnback(off);
+  }
+
   bmpTree._print_dbg();
 
-  
-  
+  printf("================================================= \n");
+  #endif
+
+  typedef FixedBuffer<1000, 1024> fix1k;
+  fix1k k;
+  fix1k q;
+  fix1k h;
+  fix1k m;
+  fix1k qq;
+  fix1k mm;
   return 0;
 }
 

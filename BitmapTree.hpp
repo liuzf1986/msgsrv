@@ -3,6 +3,7 @@
 #include <memory>
 #include <stack>
 #include <string.h>
+#include <mutex>
 
 #include "Utils.hpp"
 
@@ -62,7 +63,7 @@ struct BitmapLayer {
     off64_t lwoff = bitIdx >> 6;
     /* if original is 0, set one bit will affect up layer */
     bool upApply = !(_bits[lwoff]);
-    _bits[lwoff] |= (1 << (bitIdx & 0x3F));
+    _bits[lwoff] |= (1 << (LONG_BITS - 1 - (bitIdx & 0x3F)));
     return upApply;
   }
 
@@ -82,13 +83,12 @@ struct BitmapLayer {
     if(__builtin_expect((lwoff > _lwords), 0)) {
       return -1;
     }
-    printf("===================== _bit = %lx \n", _bits[lwoff]);
-    int offInLword = __builtin_clzl(_bits[lwoff]);
-    if(offInLword >= 0) {
-      return (lwoff << 6) + offInLword;
-    } else {
+
+    if(0 == _bits[lwoff]) {
       return -1;
     }
+
+    return (lwoff << 6) + __builtin_clzl(_bits[lwoff]);
   }
   
   uint64_t* _bits;
@@ -102,7 +102,7 @@ struct BitmapLayer {
 
 class BitmapTree {
  public:
-  BitmapTree(size_t size) {
+  BitmapTree(size_t size) : _mutex() {
     static_assert((8 == sizeof(unsigned long)), "long word is not 8 bytes");
     stack<BitmapLayer*> layers;
     size_t lsize = size;
@@ -147,10 +147,10 @@ class BitmapTree {
   }
 
   inline off64_t bitRequire() {
+    lock_guard<mutex> lock(_mutex);
     off64_t bitsOffs[BMT_MAX_DEEP] = {0};
     off64_t lwOffs = 0;
     bool found = true;
-    off64_t totOff = -1;
 
     /* record bit offset */
     for(int i = 0; i < _deep; i ++) {
@@ -163,9 +163,9 @@ class BitmapTree {
       }
     }
 
-       for(int i = 0; i < _deep; i++) {
-          printf("bits offset = %d \n", bitsOffs[i]);
-        }
+    for(int i = 0; i < _deep; i++) {
+      printf("bits offset = %ld \n", bitsOffs[i]);
+    }
 
     /* if found, reset bit upward, calculate total offsets */
     if(found) {
@@ -174,31 +174,26 @@ class BitmapTree {
           break;
         }
       }
-
-      totOff = 0;
-      for(int i = 0; i < _deep; i ++) {
-        totOff += (bitsOffs[i] << (6 * (_deep - 1 - i)));
-      }
+      return lwOffs;
     }
-    return totOff;
+    return -1;
   }
 
   inline void bitTurnback(off64_t idx) {
-    
+    lock_guard<mutex> lock(_mutex);
+    off64_t tmpIdx = idx;
+    for(int i = _deep - 1; i >= 0; i--) {
+      if(!_layers[i]->set(tmpIdx)) {
+        break;
+      }
+      tmpIdx = tmpIdx >> 6;
+    }
   }
  private:
-  
+  mutable mutex _mutex;
   BitmapLayer* _layers[BMT_MAX_DEEP];
   uint8_t _deep;
 };
-
-
-
-
-
-
-
-
 
 
 

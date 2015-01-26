@@ -1,6 +1,7 @@
 #pragma once
 
 #include <memory>
+#include "BitmapTree.hpp"
 
 /**
  * Fixed size buffer pool implementation.
@@ -12,17 +13,27 @@
 template <int C, int N>
 struct FixedBufferPool {
   static void* alloc() {
-    return poolBuf;
+    off64_t offset = _bmt.bitRequire();
+    if(offset >= 0) {
+      return static_cast<uint8_t*>(_poolBuf) + offset * N;
+    }
+    return nullptr;
   }
 
   static void release(void* buf) {
-    return;
+    if(__builtin_expect((nullptr != buf), true)) {
+        off64_t offset = (static_cast<uint8_t*>(buf) - static_cast<uint8_t*>(_poolBuf)) / N;
+        printf("========== %p, %p \n", _poolBuf, buf);
+        _bmt.bitTurnback(offset);
+    }
   }
 private:
   static void* _poolBuf;
+  static BitmapTree _bmt;
 };
 
-template<int C, int N> void* FixedBufferPool<C, N>::poolBuf = malloc(C * N);
+template<int C, int N> void* FixedBufferPool<C, N>::_poolBuf = malloc(C * N);
+template<int C, int N> BitmapTree FixedBufferPool<C, N>::_bmt(C);
 
 template <int C, int N, typename ALLOC=FixedBufferPool<C, N> >
 class FixedBuffer {
