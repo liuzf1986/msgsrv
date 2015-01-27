@@ -2,6 +2,7 @@
 
 #include "BitmapTree.hpp"
 #include "FixedBuffer.hpp"
+#include "PeerMessage.hpp"
 
 
 int count_lwords(size_t size) {
@@ -46,13 +47,9 @@ int main(int argc, char *argv[])
   printf("================================================= \n");
   #endif
 
-  typedef FixedBuffer<1000, 1024> fix1k;
-  fix1k k;
-  fix1k q;
-  fix1k h;
-  fix1k m;
-  fix1k qq;
-  fix1k mm;
+  PeerMessage* pm = PMCreator::create();
+
+  printf(" pm = %p, ================================================= \n", pm);
   return 0;
 }
 

@@ -71,3 +71,17 @@ class FixedBuffer {
   void* _bufptr; // buffer address
 };
 
+template <class T, int N, typename ALLOC=FixedBufferPool<sizeof(T), N> >
+class FixedObjCreator {
+ public:
+  static T* create() {
+    void* buf = ALLOC::alloc();
+    if(!buf) return 0;
+
+    return new(buf) T;
+  }
+};
+
+
+
+
