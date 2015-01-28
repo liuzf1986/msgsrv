@@ -4,6 +4,9 @@
 #include "FixedBuffer.hpp"
 #include "PeerMessage.hpp"
 
+typedef PMRecv<> DefPeerMessage;
+typedef FixedObjCreator<DefPeerMessage, MAX_PEER_MSG> PMCreator;
+
 
 int count_lwords(size_t size) {
   return (size + (sizeof(unsigned long) << 3) - 1) >> 6;
@@ -47,7 +50,7 @@ int main(int argc, char *argv[])
   printf("================================================= \n");
   #endif
 
-  PeerMessage* pm = PMCreator::create();
+  DefPeerMessage* pm = PMCreator::create();
 
   printf(" pm = %p, ================================================= \n", pm);
   return 0;
