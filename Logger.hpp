@@ -7,7 +7,7 @@
 #include <memory>
 #include <limits>
 
-#include <Utils.hpp>
+#include "Utils.hpp"
 
 using namespace std;
 
@@ -23,10 +23,12 @@ class Logger {
  public:
   static const int MAX_NUM_LEN = 32;
   
-  static_assert(MAX_NUM_LEN - 10 > std::numeric_limits<double>::digits10);
-  static_assert(MAX_NUM_LEN - 10 > std::numeric_limits<long double>::digits10);
-  static_assert(MAX_NUM_LEN - 10 > std::numeric_limits<long>::digits10);
-  static_assert(MAX_NUM_LEN - 10 > std::numeric_limits<long long>::digits10);
+  #define LOGGER_ASSERT_STR "not enough for store numeric"
+  static_assert(MAX_NUM_LEN - 10 > std::numeric_limits<double>::digits10, LOGGER_ASSERT_STR);
+  static_assert(MAX_NUM_LEN - 10 > std::numeric_limits<long double>::digits10, LOGGER_ASSERT_STR);
+  static_assert(MAX_NUM_LEN - 10 > std::numeric_limits<long>::digits10, LOGGER_ASSERT_STR);
+  static_assert(MAX_NUM_LEN - 10 > std::numeric_limits<long long>::digits10, LOGGER_ASSERT_STR);
+
   
   typedef Logger<OPS, N> self;
   enum {
@@ -37,7 +39,7 @@ class Logger {
     ERROR
   } LEVEL;
   
-  Logger(int cacheSize, unique_ptr<OPS>& outputStream) : _mutex(), _opsptr(std::move(outputStream)) {
+  Logger(unique_ptr<OPS>& outputStream) : _mutex(), _len(0), _opsptr(std::move(outputStream)) {
   }
   ~Logger() {}
 
@@ -45,7 +47,7 @@ class Logger {
   inline size_t stringFromNumeric(char buf[], T value) {
     static const char digits[] = "9876543210123456789";
     static const char* zero = digits + 9;
-    static_assert(sizeof(digits) == 20);
+    static_assert(sizeof(digits) == 20, "digits string size is not 20");
 
     T i = value;
     char* p = buf;
@@ -70,7 +72,7 @@ class Logger {
   inline size_t hexStringFromNumeric(char buf[], uintptr_t value)
   {
     static const char digitsHex[] = "0123456789ABCDEF";
-    static_assert(sizeof digitsHex == 17);
+    static_assert(sizeof(digitsHex) == 17, "digits size is not 17 !!");
 
     uintptr_t i = value;
     char* p = buf;
@@ -98,68 +100,87 @@ class Logger {
   }
   
   inline self& operator<<(unsigned short value) {
-    
+    appendNumeric(value);
+    return *this;
   }
   
   inline self& operator<<(int value) {
-    
+    appendNumeric(value);
+    return *this;
   }
   
   inline self& operator<<(unsigned int value) {
-    
+    appendNumeric(value);
+    return *this;
   }
   
   inline self& operator<<(long value) {
-    
+    appendNumeric(value);
+    return *this;
   }
   
   inline self& operator<<(unsigned long value) {
-    
+    appendNumeric(value);
+    return *this;
   }
   
   inline self& operator<<(long long  value) {
-    
+    appendNumeric(value);
+    return *this;
   }
   
   inline self& operator<<(unsigned long long value) {
-    
+    appendNumeric(value);
+    return *this;
   }
   
   inline self& operator<<(const void* value) {
-    
+    char temp[MAX_NUM_LEN] = {0};
+    uintptr_t vptr = reinterpret_cast<uintptr_t>(value);
+    temp[0] = '0';
+    temp[1] = 'x';
+    size_t len = hexStringFromNumeric(temp + 2, vptr);
+    append(temp, len);
+    return *this;
   }
   
   inline self& operator<<(float value) {
-    
+    char temp[MAX_NUM_LEN] = {0};
+    int len = snprintf(temp, sizeof(temp), "%.12g", value);
+    append(temp, len);
+    return *this;
   }
   
   inline self& operator<<(double value) {
-    
+    char temp[MAX_NUM_LEN] = {0};
+    int len = snprintf(temp, sizeof(temp), "%.12g", value);
+    append(temp, len);
+    return *this;
   }
   
   // self& operator<<(long double);
   inline self& operator<<(char value) {
-    
+    append(&value, 1);
+    return *this;
   }
   
   // self& operator<<(signed char);
   // self& operator<<(unsigned char);
   inline self& operator<<(const char* str) {
-    
+    append(str);
+    return *this;
   }
   
   inline self& operator<<(const unsigned char* str) {
-    
+    append(str);
+    return *this;
   }
   
   inline self& operator<<(const string& value) {
-    
+    append(value.c_str(), value.length());
+    return *this;
   }
   
-  inline self& operator<<(const std::string& value) {
-    
-  }
-
   void flushSafely() {
     lock_guard<mutex> lock(_mutex);
     flushNoLock();
@@ -167,7 +188,7 @@ class Logger {
 
  private:
   template <typename T>
-  inline void appendNumeric(T n) {
+  inline void appendNumeric(T value) {
     char temp[MAX_NUM_LEN] = {0};
     size_t len = stringFromNumeric(temp, value);
     append(temp, len);
@@ -214,8 +235,4 @@ class Logger {
   mutable mutex _mutex;
   unique_ptr<OPS> _opsptr;
 };
-
-
-
-
 

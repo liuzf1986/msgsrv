@@ -3,6 +3,8 @@
 #include "BitmapTree.hpp"
 #include "FixedBuffer.hpp"
 #include "PeerMessage.hpp"
+#include "Logger.hpp"
+#include "TimeUtil.hpp"
 
 typedef PMRecv<> DefPeerMessage;
 typedef FixedObjCreator<DefPeerMessage, MAX_PEER_MSG> PMCreator;
@@ -11,6 +13,18 @@ typedef FixedObjCreator<DefPeerMessage, MAX_PEER_MSG> PMCreator;
 int count_lwords(size_t size) {
   return (size + (sizeof(unsigned long) << 3) - 1) >> 6;
 }
+
+class LogFile {
+ public:
+  void flush(char* str, size_t len) {
+    char* temp = (char*)malloc(len + 1);
+    temp[len] = '\0';
+    memcpy(temp, str, len);
+    printf("%s \n", temp);
+
+    free(temp);
+  }
+};
 
 int main(int argc, char *argv[])
 {
@@ -53,9 +67,34 @@ int main(int argc, char *argv[])
   DefPeerMessage* pm = PMCreator::create();
 
   printf(" pm = %p, ================================================= \n", pm);
+
+  unique_ptr<LogFile> lfile(new LogFile());
+  Logger<LogFile, 1000> kk(lfile);
+
+  kk << "1234567890";
+
+  for(int m = 0; m < 20; m ++) {
+    kk.flushSafely();
+    kk << 1;
+  }
+
+  kk << "yymmdd" << TimeUtil::fmt_yymmdd();
+  kk.flushSafely();
+  
+  kk << "yymmddmm : " << TimeUtil::fmt_yymmddhhmm(); 
+  kk.flushSafely();
+
+  kk << "yymmddhhmmss : " << TimeUtil::fmt_yymmddhhmmss();
+  kk.flushSafely();
+
+  kk << "sec : " << TimeUtil::timestampSec();
+  kk.flushSafely();
+  
+  kk << "msec" << TimeUtil::timestampMS();
+  kk.flushSafely();
+
   return 0;
 }
-
 
 
 
