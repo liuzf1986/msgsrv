@@ -5,20 +5,29 @@
 #include <string.h>
 #include <mutex>
 #include <memory>
+#include <limits>
+
+#include <Utils.hpp>
 
 using namespace std;
 
 /**
- * append lock free
- * flush locked, we assume that log increase in reasonable speed.
+ * use double cache to avoid block when flushing.
  *
- * we use high 4 bits to describe buffer index.
- * ----|--------------------------
+ * OPS is output stream, such as file output, it must provide member function:
+ * void flush(const char*, size_t len);
  */
 
-template <typename OPS, int C, int N>
+template <typename OPS, int N>
 class Logger {
  public:
+  static const int MAX_NUM_LEN = 32;
+  
+  static_assert(MAX_NUM_LEN - 10 > std::numeric_limits<double>::digits10);
+  static_assert(MAX_NUM_LEN - 10 > std::numeric_limits<long double>::digits10);
+  static_assert(MAX_NUM_LEN - 10 > std::numeric_limits<long>::digits10);
+  static_assert(MAX_NUM_LEN - 10 > std::numeric_limits<long long>::digits10);
+  
   typedef Logger<OPS, N> self;
   enum {
     VERBOSE,
@@ -33,7 +42,7 @@ class Logger {
   ~Logger() {}
 
   template <typename T>
-  size_t stringFromNumeric(char buf[], T value) {
+  inline size_t stringFromNumeric(char buf[], T value) {
     static const char digits[] = "9876543210123456789";
     static const char* zero = digits + 9;
     static_assert(sizeof(digits) == 20);
@@ -58,7 +67,7 @@ class Logger {
     return p - buf;
   }
 
-  size_t convertHex(char buf[], uintptr_t value)
+  inline size_t hexStringFromNumeric(char buf[], uintptr_t value)
   {
     static const char digitsHex[] = "0123456789ABCDEF";
     static_assert(sizeof digitsHex == 17);
@@ -79,105 +88,132 @@ class Logger {
     return p - buf;
   }
 
-  self& operator<<(bool v) {
+  inline self& operator<<(bool value) {
+    append(value ? "1" : "0", 1);
+  }
+  
+  inline self& operator<<(short value) {
+    appendNumeric(value);
+    return *this;
+  }
+  
+  inline self& operator<<(unsigned short value) {
     
   }
   
-  self& operator<<(short) {
+  inline self& operator<<(int value) {
     
   }
   
-  self& operator<<(unsigned short) {
+  inline self& operator<<(unsigned int value) {
     
   }
   
-  self& operator<<(int) {
-    
-  }
-  self& operator<<(unsigned int) {
+  inline self& operator<<(long value) {
     
   }
   
-  self& operator<<(long) {
+  inline self& operator<<(unsigned long value) {
     
   }
   
-  self& operator<<(unsigned long) {
+  inline self& operator<<(long long  value) {
     
   }
   
-  self& operator<<(long long) {
+  inline self& operator<<(unsigned long long value) {
     
   }
   
-  self& operator<<(unsigned long long) {
+  inline self& operator<<(const void* value) {
     
   }
   
-  self& operator<<(const void*) {
+  inline self& operator<<(float value) {
     
   }
   
-  self& operator<<(float v) {
-    
-  }
-  
-  self& operator<<(double) {
+  inline self& operator<<(double value) {
     
   }
   
   // self& operator<<(long double);
-  self& operator<<(char v) {
+  inline self& operator<<(char value) {
     
   }
   
   // self& operator<<(signed char);
   // self& operator<<(unsigned char);
-  self& operator<<(const char* str) {
+  inline self& operator<<(const char* str) {
     
   }
   
-  self& operator<<(const unsigned char* str) {
+  inline self& operator<<(const unsigned char* str) {
     
   }
   
-  self& operator<<(const string& v) {
+  inline self& operator<<(const string& value) {
     
   }
   
-  self& operator<<(const std::string& v) {
+  inline self& operator<<(const std::string& value) {
     
+  }
+
+  void flushSafely() {
+    lock_guard<mutex> lock(_mutex);
+    flushNoLock();
   }
 
  private:
-  void flush() {
-    
+  template <typename T>
+  inline void appendNumeric(T n) {
+    char temp[MAX_NUM_LEN] = {0};
+    size_t len = stringFromNumeric(temp, value);
+    append(temp, len);
   }
   
-  void swapCache() {
+  inline void append(const char* str, size_t len) {
+    char* bufptr = markUsed(len);
+    memcpy(bufptr, str, len);
+  }
+
+  inline void append(const char* str) {
+    append(str, strlen(str));
+  }
+  
+  /**
+   * Normally used for mark certain count of cache used.
+   * @return 
+   */
+  inline char* markUsed(size_t expect) {
     lock_guard<mutex> lock(_mutex);
-    constexpr int cacheCnt = (sizeof(_cache) / sizeof(_cache[0]));
-    static_assert(cacheCnt == 2, "maybe to degree size count wrong");
-    /* flush older cache,  */
-    _opsptr->flush(_cache[_curIdx], _cur - _cache[_curIdx]);
-    
-    _curIdx = (_curIdx + 1) % cacheCnt;
-    _cur = _cache[_curIdx];
+
+
+    /* if there is not enough space for store expect size buffer, flush fisrt */
+    if(UNLIKELY((expect + _len) > N)) {
+      flushNoLock();
+    }
+    char* bufptr= _cache + _len;
+    /* increase used size */
+    _len = _len + expect;
+
+    return bufptr;
   }
   
+  /** 
+   * flush cache without lock.
+   */
+  inline void flushNoLock() {
+    _opsptr->flush(_cache, _len);
+    _len = 0;
+  }
   
-  char _cache[C][N];
-  char* _cur;
+  char _cache[N];
+  size_t _len;
   mutable mutex _mutex;
   unique_ptr<OPS> _opsptr;
 };
-
-
-
-
-
-
-
 
 
 
