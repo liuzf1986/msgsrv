@@ -93,6 +93,11 @@ int main(int argc, char *argv[])
   kk << "msec" << TimeUtil::timestampMS();
   kk.flushSafely();
 
+  char* kkptr = (char*)malloc(10);
+  
+  kk << 123 << " + " << (uintptr_t)kkptr;
+  kk.flushSafely();
+
   return 0;
 }
 

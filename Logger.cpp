@@ -8,7 +8,7 @@ template <typename T>
 size_t stringFromNumeric(char buf[], T value) {
   static const char digits[] = "9876543210123456789";
   static const char* zero = digits + 9;
-  static_assert(sizeof(digits) == 20);
+  static_assert(sizeof(digits) == 20, "");
 
   T i = value;
   char* p = buf;

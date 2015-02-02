@@ -201,6 +201,7 @@ class Logger {
 
   inline void append(const char* str) {
     append(str, strlen(str));
+    //printf("%s", str);
   }
   
   /**
