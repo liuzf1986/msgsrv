@@ -10,19 +10,7 @@
  */
 
 class TcpProxy {
-  void foo() {
-    bind(int __fd, const struct sockaddr *__addr, socklen_t __len)
-  }
- private:
+ public:
   
+ private:
 };
-
-
-
-
-
-
-
-
-
-
