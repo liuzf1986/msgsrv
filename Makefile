@@ -3,7 +3,7 @@ LD=g++
 CFLAGS=-c -O3 -std=c++11
 LDFLAGS=-Wl,--no-as-needed -lpthread
 
-OBJS=test.o TimeUtil.o
+OBJS=test.o TimeUtil.o ChannelBuffer.o
 TARGET=test
 
 $(TARGET):$(OBJS)
