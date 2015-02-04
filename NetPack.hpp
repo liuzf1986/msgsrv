@@ -2,8 +2,11 @@
 
 #include "PeerMessage.hpp"
 
-
-
-class NetPack {
+class LenFieldNetpack {
   
-}
+};
+
+class DelimiterNetpack {
+  
+};
+
