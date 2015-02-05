@@ -5,6 +5,7 @@
 #include "PeerMessage.hpp"
 #include "Logger.hpp"
 #include "TimeUtil.hpp"
+#include "NetPack.hpp"
 
 typedef PMRecv<> DefPeerMessage;
 typedef FixedObjCreator<DefPeerMessage, MAX_PEER_MSG> PMCreator;
@@ -97,6 +98,8 @@ int main(int argc, char *argv[])
   
   kk << 123 << " + " << (uintptr_t)kkptr;
   kk.flushSafely();
+
+  
 
   return 0;
 }

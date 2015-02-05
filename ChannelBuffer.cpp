@@ -8,21 +8,21 @@ int64_t ChannelBuffer::peekInt64() {
   assert(getReadbleSize() >= sizeof(int64_t));
   int64_t temp;
   memcpy(&temp, peek(), sizeof(int64_t));
-  return Endian::ntohll(temp);
+  return Endian::ntoh64(temp);
 }
 
 int32_t ChannelBuffer::peekInt32() {
   assert(getReadbleSize() >= sizeof(int32_t));
   int32_t temp;
   memcpy(&temp, peek(), sizeof(int32_t));
-  return Endian::ntohl(temp);
+  return Endian::ntoh32(temp);
 }
 
 int16_t ChannelBuffer::peekInt16() {
   assert(getReadbleSize() >= sizeof(int16_t));
   int16_t temp;
   memcpy(&temp, peek(), sizeof(int16_t));
-  return Endian::ntohs(temp);
+  return Endian::ntoh16(temp);
 }
 
 int8_t ChannelBuffer::peekInt8() {
@@ -80,17 +80,17 @@ void ChannelBuffer::autoEnlarge(size_t size) {
 }
 
 void ChannelBuffer::writeInt64(int64_t value) {
-  int64_t wval = Endian::htonll(value);
+  int64_t wval = Endian::hton64(value);
   write(static_cast<void*>(&wval), sizeof(int64_t));
 }
 
 void ChannelBuffer::writeInt32(int32_t value) {
-  int32_t wval = Endian::htonl(value);
+  int32_t wval = Endian::hton32(value);
   write(static_cast<void*>(&wval), sizeof(int32_t));
 }
 
 void ChannelBuffer::writeInt16(int16_t value) {
-  int16_t wval = Endian::htons(value);
+  int16_t wval = Endian::hton16(value);
   write(static_cast<void*>(&wval), sizeof(int16_t));
 }
 
